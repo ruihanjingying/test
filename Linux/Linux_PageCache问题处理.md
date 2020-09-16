@@ -17,7 +17,7 @@
 
 这里就要说一下inode了，这里说的inode和ext分区中的inode是不同的。这里的inode指的是内存中对磁盘文件的索引，进程在查找或者读取文件时就是通过inode来操作的。观察下面一张图（这张图的内容有错误，不是denty，而是dentry）。
 
-![inode](D:\var\typora\Linux\7ef7747f71ef236e8cf5f9378d80da99.jpg)
+![inode](Linux PageCache问题处理.assets/7ef7747f71ef236e8cf5f9378d80da99.jpg)
 
  [^ 这一段内容我不太懂，感觉不太理解]
 
@@ -25,7 +25,7 @@
 
 如果使用drop_cache来释放inode的话，应该清楚inode的几个控制项。我们可以往 drop_cache中写入不同的值来控制Linux操作系统释放不同类型的cache（用户数据pageCache，内核数据slab，或者二者都释放）
 
-![drop_cache](D:\var\typora\Linux\Linux PageCache问题处理.assets\ab748f14be603df45c2570fe8e24707d.jpg)
+![drop_cache](Linux PageCache问题处理.assets\ab748f14be603df45c2570fe8e24707d.jpg)
 
 通过上面的内容来看，当我们使用echo 1 > /proc/sys/vm/drop_caches时，是比较安全的，它只释放系统中的clean页。但当使用echo 2的时候，这里就存在一个陷阱了：
 
@@ -53,7 +53,7 @@ drop_slab 2
 
 从前面的内容可以知道，当内存紧张时会触发内核进行内存回收，内核在回收内存时会尝试回收reclaimable（可以被回收）的内容，这部分pagecache又包括reclaimable kernel memory（比如slab）。看下面一张图
 
-![img](D:\var\typora\Linux\Linux PageCache问题处理.assets\d33a7264358f20fb063cb49fc3f3163c.jpg)
+![img](Linux PageCache问题处理.assets\d33a7264358f20fb063cb49fc3f3163c.jpg)
 
 reclaimer是指回收者，他可以是内核线程（包括kswapd）**也可以是用户线程**。回收的时候，它会依次来扫码pagecache和slabpage中有哪些是可以被回收的，如果有的话就尝试去回收，如果没有的话就会跳过。在扫描的过程中是按比例逐步进行扫描的，并不是一开始就全部扫描，一开始仅仅扫描一部分，如果在进行回收后发现回收内存不足，则增大扫描比例再次进行扫描，直到全部扫描完。这就是内存回收的大致过程。[^这里是有疑问的，在回收的过程中有没有优先级？比如先回收clean的，再回收dirty的?]
 
@@ -163,7 +163,7 @@ Mlocked: 1000000 kB
 
 原理如下：
 
-![img](D:\var\typora\Linux\Linux PageCache问题处理.assets\71e7347264a54773d902aa92535b87cc.jpg)
+![img](Linux PageCache问题处理.assets\71e7347264a54773d902aa92535b87cc.jpg)
 
 memory cgroup也提供了几个内存水位控制线 memory.{min,low,high,max}。
 
